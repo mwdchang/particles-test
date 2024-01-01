@@ -5,7 +5,11 @@
   {
     "imports": {
       "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+      "tweakpane": "https://cdn.jsdelivr.net/npm/tweakpane@4.0.3/dist/tweakpane.min.js",
+      "cube": "./cube.js",
+      "sphere": "./sphere.js",
+      "torus": "./torus.js"
     }
   }
 </script>
@@ -19,8 +23,12 @@ body {
 <body>
 </body>
 <script type="module">
+import {Pane} from 'tweakpane';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import * as Cube from 'cube';
+import * as Sphere from 'sphere';
+import * as Torus from 'torus';
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
@@ -42,71 +50,118 @@ light1.position.z = 10;
 scene.add(light1);
 
 const SIZE = 50000;
-const BOUND = 6;
+let drawSize = 10000; // smaller than SIZE
+
+let pointerSize = 0.07;
 
 const points = new THREE.BufferGeometry();
 const vertices = new Float32Array( SIZE * 3 ); // 3 vertices per point
 const speeds = new Float32Array( SIZE * 3 );
 const colors = new Float32Array( SIZE * 3 );
-const initialVec = [0.06, 0.06, 0.02];
 
-for (let i = 0; i < speeds.length; i++) {
-  vertices[i] = 0.4 - Math.random() * 0.8;
-  speeds[i] = initialVec[i % 3] - 0.02 + Math.random() * 0.04;
-  colors[i * 3] = 0;
-}
-
-for (let i = 0; i < SIZE; i++) {
-  colors[i * 3 + 0] = Math.random();
-  colors[i * 3 + 1] = Math.random();
-}
+let shape = Cube;
+shape.initialize(SIZE, vertices, speeds, colors);
 
 points.setAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
 points.setAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
 
+// From: https://stackoverflow.com/questions/41509156/three-js-give-particles-round-form
+function createCanvasMaterial(color, size) {
+  var matCanvas = document.createElement('canvas');
+  matCanvas.width = matCanvas.height = size;
+  var matContext = matCanvas.getContext('2d');
+  // create exture object from canvas.
+  var texture = new THREE.Texture(matCanvas);
+  // Draw a circle
+  var center = size / 2;
+  matContext.beginPath();
+  matContext.arc(center, center, size/2, 0, 2 * Math.PI, false);
+  matContext.closePath();
+  matContext.fillStyle = color;
+  matContext.fill();
+  // need to set needsUpdate
+  texture.needsUpdate = true;
+  // return a texture made from the canvas
+  return texture;
+}
+
 const pointsData = new THREE.Points( points,  
   new THREE.PointsMaterial({ 
+    map: createCanvasMaterial('#ffffff', 64),
     color: '#FFF',
     transparent: true,
     opacity: 0.53,
-    size: 0.07, 
-    vertexColors: true
+    size: pointerSize,
+    vertexColors: true,
+    depthWrite: false
   })
 );
-pointsData.geometry.setDrawRange(0, SIZE);
-console.log(pointsData);
+pointsData.geometry.setDrawRange(0, drawSize);
 scene.add(pointsData);
 
-const updatePositions = () => {
-	const positions = pointsData.geometry.attributes.position.array;
-	// const c = pointsData.geometry.attributes.color.array;
-
-  for (let i = 0; i < positions.length; i++) {
-		positions[ i ] += speeds[i];
-    if (positions[i] >= BOUND) {
-      positions[i] = BOUND;
-      speeds[i] = -speeds[i];
-      // c[i] = Math.random();
-    } else if (positions[i] <= -BOUND) {
-      positions[i] = -BOUND;
-      speeds[i] = -speeds[i];
-      // c[i] = 0.5;
-    }
-  }
-}
 
 document.body.appendChild( renderer.domElement );
 
 // Start 
 const animate = () => {
-	requestAnimationFrame( animate );
+  requestAnimationFrame( animate );
   controls.update();
-  updatePositions();
+  shape.update(pointsData, vertices, speeds, colors);
+
   pointsData.geometry.attributes.position.needsUpdate = true;
   // pointsData.geometry.attributes.color.needsUpdate = true;
-	renderer.render( scene, camera );
+  renderer.render( scene, camera );
 }
 animate();
+
+
+// Tweak pane UI construction
+const PARAMS = {
+  Shape: 'Cube',
+  Particles: drawSize,
+  Size: pointerSize,
+};
+const pane = new Pane({ title: 'Configuration' });
+
+const particlesHandler = pane.addBinding(
+  PARAMS, 'Particles',
+  { min: 1000, max: SIZE, step: 1000 }
+);
+
+const shapeHandler = pane.addBinding(PARAMS, 'Shape', {
+  options: {
+    Cube: 'Cube',
+    Sphere: 'Sphere',
+    Torus: 'Torus'
+  },
+});
+
+const sizeHandler = pane.addBinding(
+  PARAMS, 'Size',
+  { min: 0.01, max: 0.8, step: 0.01 }
+);
+
+shapeHandler.on('change', function(ev) {
+  if (ev.value === 'Cube') {
+    shape = Cube;
+  } else if (ev.value === 'Sphere') {
+    shape = Sphere;
+  } else if (ev.value === 'Torus') {
+    shape = Torus;
+  }
+  shape.initialize(SIZE, vertices, speeds, colors);
+  pointsData.geometry.attributes.color.needsUpdate = true;
+});
+
+particlesHandler.on('change', function(ev) {
+  drawSize = +ev.value;
+  pointsData.geometry.setDrawRange(0, drawSize);
+});
+
+sizeHandler.on('change', function(ev) {
+  pointerSize = +ev.value;
+  pointsData.material.size = pointerSize;
+});
 
 </script>
 </html>
