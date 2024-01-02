@@ -49,8 +49,11 @@ export const update = (pointsData, vertices, speeds, colors) => {
   // https://math.stackexchange.com/questions/4380905/how-can-i-determine-if-a-point-x-y-z-is-within-a-torus-r-r#:~:text=Some%20basic%20trigonometry%20shows%20that,)2%2B%CB%86z2.&text=or%20(R%E2%88%92%E2%88%9A%CB%86x,%2Bz2%3Cr2.
   const p = pointsData.geometry.attributes.position.array;
   const calc = (idx) => {
-    return (R_MAJOR - Math.sqrt(p[idx * 3] * p[idx * 3] + p[idx * 3 + 1] * p[idx * 3 + 1])) *
-      (R_MAJOR - Math.sqrt(p[idx * 3] * p[idx * 3] + p[idx * 3 + 1] * p[idx * 3 + 1])) + p[idx * 3 + 2] * p[idx * 3 + 2];
+    const tmp = R_MAJOR - Math.sqrt(p[idx * 3] * p[idx * 3] + p[idx * 3 + 1] * p[idx * 3 + 1]);
+    return tmp * tmp + p[idx * 3 + 2] * p[idx * 3 + 2];
+
+    // return (R_MAJOR - Math.sqrt(p[idx * 3] * p[idx * 3] + p[idx * 3 + 1] * p[idx * 3 + 1])) *
+    //        (R_MAJOR - Math.sqrt(p[idx * 3] * p[idx * 3] + p[idx * 3 + 1] * p[idx * 3 + 1])) + p[idx * 3 + 2] * p[idx * 3 + 2];
   }
 
   let r2 = 0;

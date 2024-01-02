@@ -49,7 +49,8 @@ light1.position.y = 30;
 light1.position.z = 10;
 scene.add(light1);
 
-const SIZE = 50000;
+const SIZE = 1000000;
+// const SIZE = 100000;
 let drawSize = 10000; // smaller than SIZE
 
 let pointerSize = 0.07;
@@ -93,7 +94,8 @@ const pointsData = new THREE.Points( points,
     opacity: 0.53,
     size: pointerSize,
     vertexColors: true,
-    depthWrite: false
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
   })
 );
 pointsData.geometry.setDrawRange(0, drawSize);
@@ -102,7 +104,17 @@ scene.add(pointsData);
 
 document.body.appendChild( renderer.domElement );
 
+
+const PARAMS = {
+  Shape: 'Cube',
+  Particles: drawSize,
+  Size: pointerSize,
+  FPS: 0
+};
+
 // Start 
+let frames = 0;
+let prevTime = 0;
 const animate = () => {
   requestAnimationFrame( animate );
   controls.update();
@@ -111,16 +123,21 @@ const animate = () => {
   pointsData.geometry.attributes.position.needsUpdate = true;
   // pointsData.geometry.attributes.color.needsUpdate = true;
   renderer.render( scene, camera );
+
+  frames++;
+  const time = performance.now();
+  if ( time >= prevTime + 1000 ) {
+    let fps = Math.round( ( frames * 1000 ) / ( time - prevTime ) );
+    PARAMS.FPS = fps;
+    console.log( fps);
+    frames = 0;
+    prevTime = time;
+  }
 }
 animate();
 
 
 // Tweak pane UI construction
-const PARAMS = {
-  Shape: 'Cube',
-  Particles: drawSize,
-  Size: pointerSize,
-};
 const pane = new Pane({ title: 'Configuration' });
 
 const particlesHandler = pane.addBinding(
@@ -140,6 +157,13 @@ const sizeHandler = pane.addBinding(
   PARAMS, 'Size',
   { min: 0.01, max: 0.8, step: 0.01 }
 );
+
+
+pane.addBinding(PARAMS, 'FPS', {
+  readonly: true,
+  view: 'graph',
+  min: 0
+});
 
 shapeHandler.on('change', function(ev) {
   if (ev.value === 'Cube') {
