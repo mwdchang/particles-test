@@ -10,7 +10,10 @@
       "cube": "./cube.js",
       "sphere": "./sphere.js",
       "torus": "./torus.js",
-      "cone": "./cone.js"
+      "cone": "./cone.js",
+      "heart": "./heart.js",
+      "gyroid": "./gyroid.js",
+      "torusKnot": "./torus-knot.js"
     }
   }
 </script>
@@ -31,6 +34,9 @@ import * as Cube from 'cube';
 import * as Sphere from 'sphere';
 import * as Torus from 'torus';
 import * as Cone from 'cone';
+import * as Heart from 'heart';
+import * as Gyroid from 'gyroid';
+import * as TorusKnot from 'torusKnot';
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
@@ -152,7 +158,10 @@ const shapeHandler = pane.addBinding(PARAMS, 'Shape', {
     Cube: 'Cube',
     Sphere: 'Sphere',
     Torus: 'Torus',
-    Cone: 'Cone'
+    Cone: 'Cone',
+    Heart: 'Heart',
+    Gryoid: 'Gyroid',
+    TorusKnot: 'TorusKnot'
   },
 });
 
@@ -175,8 +184,14 @@ shapeHandler.on('change', function(ev) {
     shape = Sphere;
   } else if (ev.value === 'Torus') {
     shape = Torus;
-  } else if(ev.value === 'Cone') {
+  } else if (ev.value === 'Cone') {
     shape = Cone;
+  } else if (ev.value === 'Heart') {
+    shape = Heart;
+  } else if (ev.value === 'Gyroid') {
+    shape = Gyroid;
+  } else if (ev.value === 'TorusKnot') {
+    shape = TorusKnot;
   }
   shape.initialize(SIZE, vertices, speeds, colors);
   pointsData.geometry.attributes.color.needsUpdate = true;
